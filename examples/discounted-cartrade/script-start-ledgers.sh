@@ -18,7 +18,7 @@ function start_fabric_testnet() {
     pushd "${ROOT_DIR}/tools/docker/fabric-all-in-one"
 
     echo ">> Start Fabric ${CACTUS_FABRIC_ALL_IN_ONE_VERSION}..."
-    docker-compose -f ./docker-compose-v2.x.yml build
+#    docker-compose -f ./docker-compose-v2.x.yml build
     docker-compose -f ./docker-compose-v2.x.yml up -d
     sleep 1
 

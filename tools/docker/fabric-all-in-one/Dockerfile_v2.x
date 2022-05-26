@@ -1,6 +1,6 @@
 # We need to use the older, more stable v18 here because of
 # https://github.com/docker-library/docker/issues/170
-FROM docker:20.10.3-dind
+FROM --platform=linux/amd64 docker:20.10.3-dind
 
 ARG FABRIC_VERSION=2.2.0
 ARG CA_VERSION=1.4.9
@@ -120,7 +120,8 @@ RUN apk add --no-cache util-linux
 # FIXME - make it so that SSHd does not need this to work
 RUN echo "root:$(uuidgen)" | chpasswd
 
-RUN curl -sSL https://raw.githubusercontent.com/cloudflare/semver_bash/c1133faf0efe17767b654b213f212c326df73fa3/semver.sh > /semver.sh
+#RUN curl -sSL https://raw.githubusercontent.com/cloudflare/semver_bash/c1133faf0efe17767b654b213f212c326df73fa3/semver.sh > /semver.sh
+COPY semver.sh /semver.sh
 RUN chmod +x /semver.sh
 
 # jq is needed by the /download-frozen-image-v2.sh script to pre-fetch docker images without docker.
@@ -133,7 +134,8 @@ RUN apk add --no-cache jq
 # The reason to jump trough these hoops is to speed up the boot time of the
 # container which won't have to download the images at container startup since
 # they'll have been cached already at build time.
-RUN curl -sSL https://raw.githubusercontent.com/moby/moby/dedf8528a51c6db40686ed6676e9486d1ed5f9c0/contrib/download-frozen-image-v2.sh > /download-frozen-image-v2.sh
+#RUN curl -sSL https://raw.githubusercontent.com/moby/moby/dedf8528a51c6db40686ed6676e9486d1ed5f9c0/contrib/download-frozen-image-v2.sh > /download-frozen-image-v2.sh
+COPY download-frozen-image-v2.sh /download-frozen-image-v2.sh
 RUN chmod +x /download-frozen-image-v2.sh
 
 RUN mkdir -p /etc/hyperledger/fabric/fabric-peer/
@@ -159,7 +161,8 @@ RUN /download-frozen-image-v2.sh /etc/couchdb/ couchdb:${COUCH_VERSION}
 # Download and execute the Fabric bootstrap script, but instruct it with the -d
 # flag to avoid pulling docker images because during the build phase of this image
 # there is no docker daemon running yet
-RUN curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/54e27a66812845985c5c067d7f5244a05c6e719b/scripts/bootstrap.sh > /bootstrap.sh
+#RUN curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/54e27a66812845985c5c067d7f5244a05c6e719b/scripts/bootstrap.sh > /bootstrap.sh
+COPY bootstrap.sh  /bootstrap.sh
 RUN chmod +x bootstrap.sh
 # Run the bootstrap here so that at least we can pre-fetch the git clone and the binary downloads resulting in
 # faster container startup speed since these steps will not have to be done, only the docker image pulls.
@@ -185,9 +188,14 @@ ENV CA_VERSION=${CA_VERSION}
 ENV COUCH_VERSION_FABRIC=${COUCH_VERSION_FABRIC}
 ENV COUCH_VERSION=${COUCH_VERSION}
 
+#RUN modprobe ip_tables
+#RUN echo 'ip_tables' >> /etc/modules
+
+
 # Extend the parent image's entrypoint
 # https://superuser.com/questions/1459466/can-i-add-an-additional-docker-entrypoint-script
 ENTRYPOINT ["/usr/bin/supervisord"]
+
 CMD ["--configuration", "/etc/supervisord.conf", "--nodaemon"]
 
 # We consider the container healthy once the default example asset-transfer contract has been deployed
